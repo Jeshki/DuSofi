@@ -1,7 +1,5 @@
 // src/App.jsx
 import React, { useState, useMemo, useEffect } from "react";
-// Pašaliname BrowserRouter importą, nes jis dabar yra main.jsx.
-// Paliekame tik reikiamus komponentus ir kabliukus.
 import { Routes, Route, useLocation } from "react-router-dom"; 
 
 // Komponentų importai
@@ -70,13 +68,14 @@ export default function App() {
 
   // --- useEffect ir useMemo ---
    useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode);
-    localStorage.setItem('darkMode', darkMode ? 'true' : 'false');
+    document.documentElement.classList.toggle('dark', darkMode); // Nustato tamsųjį režimą
+    localStorage.setItem('darkMode', darkMode ? 'true' : 'false'); // Išsaugo tamsiojo režimo būseną
   }, [darkMode]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const groupParam = params.get('group');
+    // Nustato filtrus pagal URL parametrus, jei puslapis yra '/philosophers'
     if (location.pathname === '/philosophers' && groupParam) {
       if (IdeologicalGroups[groupParam]) {
         setSelectedGroup(groupParam);
@@ -87,6 +86,7 @@ export default function App() {
       setSelectedChronologicalOrder('');
       setSortBy('default');
     } else if (location.pathname !== '/philosophers') {
+    // Išvalo filtrus, jei puslapis nėra '/philosophers'
       setSelectedGroup('');
       setSelectedRegion('');
       setSelectedChronologicalOrder('');
@@ -94,6 +94,7 @@ export default function App() {
     }
   }, [location.search, location.pathname]);
 
+  // Apdoroja filosofų duomenis, pridedant pradžios ir pabaigos metus rūšiavimui
   const processedPhilosophers = useMemo(() => {
      return philosophers.map(p => ({
       ...p,
@@ -102,24 +103,30 @@ export default function App() {
     }));
   }, []);
 
+  // Funkcija, atidaranti modalinį langą su filosofo turiniu
   const handleOpenModal = (philosopher, contentType) => {
     setModalContent({ philosopher, contentType });
   };
 
+  // Filtruoja ir rūšiuoja filosofus pagal pasirinktus kriterijus
   const filteredAndSortedPhilosophers = useMemo(() => {
     let result = [...processedPhilosophers];
+    // Filtravimas pagal ideologinę grupę
     if (selectedGroup) {
       const groupIdeologies = IdeologicalGroups[selectedGroup];
       if (groupIdeologies && Array.isArray(groupIdeologies)) {
         result = result.filter(p => p.IdeologicalOrder && groupIdeologies.includes(p.IdeologicalOrder));
       }
     }
+    // Filtravimas pagal regioną
     if (selectedRegion) {
       result = result.filter(p => p.geographicalOrder === selectedRegion);
     }
+    // Filtravimas pagal chronologinę tvarką
     if (selectedChronologicalOrder) {
       result = result.filter(p => p.ChronologicalOrder === selectedChronologicalOrder);
     }
+    // Rūšiavimas
     if (sortBy === 'chronological') {
         result.sort((a, b) => a.startYear - b.startYear);
     } else if (sortBy === 'youngest_first') {
@@ -134,34 +141,35 @@ export default function App() {
   // --- useEffect ir useMemo pabaiga ---
 
   return (
-    // Pašalintas <Router> komponentas iš čia
+    // Pagrindinis aplikacijos konteineris su viso puslapio stiliais
     <div className="min-h-screen bg-white dark:bg-black text-gray-800 dark:text-gray-200 transition-colors duration-300">
+      {/* Antraštės komponentas */}
       <Header darkMode={darkMode} setDarkMode={setDarkMode} />
       <main className="pt-4 pb-12">
+        {/* Maršrutų konfigūracija */}
         <Routes>
-          {/* Pagrindinis puslapis (/) naudoja HomePage su filtrais ir modalais */}
+          {/* Pagrindinis puslapis (/) */}
           <Route
             path="/"
             element={<HomePage
               filteredPhilosophers={filteredAndSortedPhilosophers}
-              handleCardClick={handleOpenModal} // Perduodame modal funkciją
+              handleCardClick={handleOpenModal} // Perduodama modalinio lango atidarymo funkcija
               selectedGroup={selectedGroup}
               setSelectedGroup={setSelectedGroup}
               selectedRegion={selectedRegion}
               setSelectedRegion={setSelectedRegion}
               sortBy={sortBy}
               setSortBy={setSortBy}
-              selectedChronologicalOrder={selectedChronologicalOrder}
-              setSelectedChronologicalOrder={setSelectedChronologicalOrder}
+              selectedChronologicalOrder={selectedChronologicalOrder} 
+              setSelectedChronologicalOrder={setSelectedChronologicalOrder} 
             />}
           />
 
-          {/* Atskiras filosofų sąrašo puslapis (/philosophers) su filtrais, bet be modalų */}
+          {/* Filosofų sąrašo puslapis (/philosophers) */}
           <Route
             path="/philosophers"
-            element={<PhilosophersListPage // Naudojame SĄRAŠO puslapį
+            element={<PhilosophersListPage 
               filteredPhilosophers={filteredAndSortedPhilosophers}
-              // handleCardClick čia NEPERDUODAMAS
               selectedGroup={selectedGroup}
               setSelectedGroup={setSelectedGroup}
               selectedRegion={selectedRegion}
@@ -173,25 +181,25 @@ export default function App() {
             />}
           />
 
-          {/* Kiti maršrutai (galite palikti arba pakeisti pagal poreikį) */}
+          {/* Kiti puslapiai */}
           <Route path="/about" element={<About />} />
-      
           <Route path="/ideologies" element={<Ideologies />} />
           <Route path="/quotes" element={<Quotes />} />
 
-          {/* Maršrutas į filosofo detalų puslapį */}
+          {/* Dinaminis filosofo detalių puslapis */}
           <Route path="/philosopher/:id" element={<PhilosopherPage />} />
         </Routes>
       </main>
 
-      {/* Modalinis langas rodomas, jei yra turinys (valdomas per handleOpenModal iš HomePage) */}
+      {/* Modalinis langas, rodomas tik tada, kai yra turinys */}
       {modalContent.philosopher && modalContent.contentType && (
         <BioModal
           philosopher={modalContent.philosopher}
           contentType={modalContent.contentType}
-          onClose={() => setModalContent({ philosopher: null, contentType: null })}
+          onClose={() => setModalContent({ philosopher: null, contentType: null })} // Uždaro modalinį langą
         />
       )}
+      {/* Poraštės komponentas */}
       <Footer />
     </div>
   );
